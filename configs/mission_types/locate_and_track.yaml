@@ -1,0 +1,95 @@
+description: Locate And Track
+default_state:
+    initial_state: execution
+    image_resolution:
+        width: 640
+        height: 480
+    states:
+        execution:
+            prompt: "You are a **UAV controller** executing a multi-step task plan\
+                \ using onboard camera images and tools.\n\n**Current Goal:** Execute\
+                \ the next step of the high-level plan by navigating to a location\
+                \ and gathering required information from the current waypoint and\
+                \ its images(if available).\n\n## Context & State\n* **Current Location:**\
+                \ {current_location}\n* **Locations to Visit (Unvisited):** {locations_to_be_visited}\n\
+                * **Visited Locations (Do not revisit):** {past_locations}\n* **High-Level\
+                \ Plan:** {plan}\n\n## Reasoning \nPut your thought process inside\
+                \ the <think></think> tags. Than return the final answer outside the\
+                \ tags.\n\n## Response Format\nProvide the answer as JSON-Object with\
+                \ the following fields:\n{{\n  \"justification\": str, // Justify\
+                \ the next action (navigation/tool/info gathering) based on the reasoning\
+                \ process.\n  \"tool_call\": object, // Call one tool to fulfill the\
+                \ plan step. Must use the specified tool format for ToolCallAction.\n\
+                \  \"information\": str // Information gathered from the current images\
+                \ at {current_location} (if available) with relevant context for the\
+                \ plan.\n}}\n\n## Available Tools (Tool Specification for 'tool_call')\n"
+            output_keys:
+            -   justification:
+                    type: string
+                    max_length: 300
+            -   tool_call:
+                    type: object
+            -   information:
+                    type: string
+                    max_length: 300
+            observations:
+            - current_location
+            - locations_to_be_visited
+            - past_locations
+            - plan
+            tools:
+            - next_goal
+            verifiers:
+            -   formatted_verifier:
+                    reward_factor: 1.0
+            state_transitions:
+                conditions:
+                -   condition: '{locations_to_be_visited} == []'
+                    next_state: conclusion_generation
+        conclusion_generation:
+            prompt: "You are the **UAV controller** responsible for providing the\
+                \ final answer based on all gathered data.\n\n**Current Goal:** Synthesize\
+                \ the final answer to the user's instruction using the complete set\
+                \ of gathered information.\n\n## Reasoning \nPut your thought process\
+                \ inside the <think></think> tags. Than return the final answer outside\
+                \ the tags.\n\n## Response Format\nProvide the answer as JSON-Object\
+                \ with the following fields:\n{{\n  \"justification\": str, // Justify\
+                \ the final conclusion based on gathered information and the reasoning\
+                \ process.\n  \"tool_call\": object  // Call the 'report_final_conclusion'\
+                \ tool with the required parameters.\n}}\n\n## Context\n* **User Instruction:**\
+                \ {plan}\n* **Information Gathered (Output of all waypoints based\
+                \ on previous conversations)**\n\n## Available Tools:\n"
+            output_keys:
+            -   justification:
+                    type: string
+                    max_length: 300
+            -   tool_call:
+                    type: object
+            observations:
+            - plan
+            tools:
+            - report_final_conclusion
+            verifiers:
+            -   conclusion_verifier:
+                    reward_factor: 2.0
+            state_transitions:
+                conditions:
+                -   condition: action.name == 'report_final_conclusion'
+                    next_state: end
+        end:
+            prompt: ''
+            tools: []
+            observations: []
+            state_transitions:
+                conditions: []
+ui_metadata:
+    positions:
+        conclusion_generation:
+        - 48.26773806891211
+        - 109.98530883033419
+        end:
+        - 442
+        - 317
+        execution:
+        - -28.5
+        - -125

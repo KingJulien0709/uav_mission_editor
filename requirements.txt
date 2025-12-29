@@ -1,0 +1,9 @@
+streamlit
+huggingface_hub
+pillow
+pandas
+pytest
+pyyaml
+pydantic
+streamlit-flow-component
+git+https://github.com/KingJulien0709/uav_mission_env.git
