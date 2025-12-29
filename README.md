@@ -86,7 +86,3 @@ Mission types define the state machine for UAV behavior:
 3. **Configure Mission Types**: Use the visual editor to define state machines
 4. **Generate Missions**: Use agentic creation for synthetic data
 5. **Sync to HuggingFace**: Push your dataset for sharing
-
-## License
-
-MIT
