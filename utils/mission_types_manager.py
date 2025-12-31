@@ -6,6 +6,33 @@ from typing import Dict, Any, List
 
 MISSION_TYPES_DIR = "configs/mission_types"
 
+
+class LiteralScalarString(str):
+    """A string that will be represented as a literal block scalar in YAML."""
+    pass
+
+
+class CustomDumper(yaml.SafeDumper):
+    """Custom YAML dumper that uses literal block scalar style for multiline strings."""
+    pass
+
+
+def str_representer(dumper, data):
+    """Represent strings, using literal block style for multiline."""
+    if '\n' in data:
+        # Strip trailing whitespace from each line to allow literal block style
+        # YAML doesn't support trailing spaces in literal block scalars
+        lines = data.split('\n')
+        cleaned_lines = [line.rstrip() for line in lines]
+        cleaned_data = '\n'.join(cleaned_lines)
+        # Use literal block scalar style (|) for multiline strings
+        return dumper.represent_scalar('tag:yaml.org,2002:str', cleaned_data, style='|')
+    return dumper.represent_scalar('tag:yaml.org,2002:str', data)
+
+
+# Register the custom representer
+CustomDumper.add_representer(str, str_representer)
+
 DEFAULT_MISSION_TYPES = {
     "locate_and_report": {
         "description": "Locate the target and report its position.",
@@ -111,15 +138,19 @@ def save_mission_type(name: str, config: Dict[str, Any], prefer_yaml: bool = Fal
     json_path = os.path.join(MISSION_TYPES_DIR, f"{name}.json")
     yaml_path = os.path.join(MISSION_TYPES_DIR, f"{name}.yaml")
     
+    # Remove ui_metadata before saving (it's editor-only data, not part of the config)
+    config_to_save = {k: v for k, v in config.items() if k != 'ui_metadata'}
+    
     if os.path.exists(yaml_path) or prefer_yaml:
         with open(yaml_path, 'w') as f:
-            yaml.dump(config, f, indent=4, sort_keys=False)
+            yaml.dump(config_to_save, f, Dumper=CustomDumper, default_flow_style=False, 
+                     sort_keys=False, allow_unicode=True, width=1000)
         # Delete JSON if it exists to avoid confusion
         if os.path.exists(json_path):
             os.remove(json_path)
     else:
         with open(json_path, 'w') as f:
-            json.dump(config, f, indent=4)
+            json.dump(config_to_save, f, indent=4)
 
 def save_mission_types(types_config: Dict[str, Any]):
     """Saves all mission types, deleting files for keys not in types_config."""

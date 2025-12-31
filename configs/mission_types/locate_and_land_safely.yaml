@@ -1,44 +1,32 @@
 description: Locate And Land Safely
 default_state:
-    states:
-        h:
-            prompt: ''
-            tools: []
-            observations: []
-            state_transitions:
-                conditions:
-                -   condition: action.name == 'land_safely'
-                    next_state: '123'
-        '123':
-            prompt: 'You are a UAV controller...
-
-                ## Reasoning
-
-                Put your thought process inside <think></think> tags.'
-            tools:
-            - next_goal
-            observations:
-            - current_location
-            - plan
-            state_transitions:
-                conditions:
-                -   condition: '{next_goal} == ''"ground"'''
-                    next_state: find
-        find:
-            prompt: ''
-            tools: []
-            observations: []
-            state_transitions:
-                conditions: []
-    initial_state: h
-ui_metadata:
-    positions:
-        '123':
-        - 100
-        - 80
-        find:
-        - 100
-        - 280
-        h:
-        - 554.10764684998
-        - 157.22192970743347
+  states:
+    h:
+      prompt: ''
+      tools: []
+      observations: []
+      state_transitions:
+        conditions:
+        - condition: action.name == 'land_safely'
+          next_state: '123'
+    '123':
+      prompt: |-
+        You are a UAV controller...
+        ## Reasoning
+        Put your thought process inside <think></think> tags.
+      tools:
+      - next_goal
+      observations:
+      - current_location
+      - plan
+      state_transitions:
+        conditions:
+        - condition: '{next_goal} == ''"ground"'''
+          next_state: find
+    find:
+      prompt: ''
+      tools: []
+      observations: []
+      state_transitions:
+        conditions: []
+  initial_state: h

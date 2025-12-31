@@ -1,33 +1,35 @@
-initial_state: execution
-image_resolution: 
-  width: 640
-  height: 480
-states:
-  execution:
-    prompt: |
-      You are a **UAV controller** executing a multi-step task plan using onboard camera images and tools.
-      
-      **Current Goal:** Execute the next step of the high-level plan by navigating to a location and gathering required information from the current waypoint and its images(if available).
+description: Locate And Track
+default_state:
+  initial_state: execution
+  image_resolution:
+    width: 640
+    height: 480
+  states:
+    execution:
+      prompt: |
+        You are a **UAV controller** executing a multi-step task plan using onboard camera images and tools.
 
-      ## Context & State
-      * **Current Location:** {current_location}
-      * **Locations to Visit (Unvisited):** {locations_to_be_visited}
-      * **Visited Locations (Do not revisit):** {past_locations}
-      * **High-Level Plan:** {plan}
+        **Current Goal:** Execute the next step of the high-level plan by navigating to a location and gathering required information from the current waypoint and its images(if available).
 
-      ## Reasoning 
-      Put your thought process inside the <think></think> tags. Than return the final answer outside the tags.
-      
-      ## Response Format
-      Provide the answer as JSON-Object with the following fields:
-      {{
-        "justification": str, // Justify the next action (navigation/tool/info gathering) based on the reasoning process.
-        "tool_call": object, // Call one tool to fulfill the plan step. Must use the specified tool format for ToolCallAction.
-        "information": str // Information gathered from the current images at {current_location} (if available) with relevant context for the plan.
-      }}
+        ## Context & State
+        * **Current Location:** {current_location}
+        * **Locations to Visit (Unvisited):** {locations_to_be_visited}
+        * **Visited Locations (Do not revisit):** {past_locations}
+        * **High-Level Plan:** {plan}
 
-      ## Available Tools (Tool Specification for 'tool_call')
-    output_keys:
+        ## Reasoning
+        Put your thought process inside the <think></think> tags. Than return the final answer outside the tags.
+
+        ## Response Format
+        Provide the answer as JSON-Object with the following fields:
+        {{
+          "justification": str, // Justify the next action (navigation/tool/info gathering) based on the reasoning process.
+          "tool_call": object, // Call one tool to fulfill the plan step. Must use the specified tool format for ToolCallAction.
+          "information": str // Information gathered from the current images at {current_location} (if available) with relevant context for the plan.
+        }}
+
+        ## Available Tools (Tool Specification for 'tool_call')
+      output_keys:
       - justification:
           type: string
           max_length: 300
@@ -36,62 +38,60 @@ states:
       - information:
           type: string
           max_length: 300
-    observations:
+      observations:
       - current_location
       - locations_to_be_visited
       - past_locations
       - plan
-    tools:
+      tools:
       - next_goal
       - activate_tracking_mode
-    verifiers:
+      verifiers:
       - formatted_verifier:
           reward_factor: 1.0
-    state_transitions:
-      conditions:
-        - condition: "{next_goal} == 'ground'"
+      state_transitions:
+        conditions:
+        - condition: '{next_goal} == ''ground'''
           next_state: conclusion_generation
-        - condition: "{locations_to_be_visited} == []"
+        - condition: '{locations_to_be_visited} == []'
           next_state: conclusion_generation
-        - condition: "else"
+        - condition: else
           next_state: execution
-      error:
-        next_state: error
-  conclusion_generation:
-    prompt: |
-      You are the **UAV controller** responsible for providing the final answer based on all gathered data.
+    conclusion_generation:
+      prompt: |
+        You are the **UAV controller** responsible for providing the final answer based on all gathered data.
 
-      **Current Goal:** Synthesize the final answer to the user's instruction using the complete set of gathered information.
+        **Current Goal:** Synthesize the final answer to the user's instruction using the complete set of gathered information.
 
-      ## Reasoning 
-      Put your thought process inside the <think></think> tags. Than return the final answer outside the tags.
-      
-      ## Response Format
-      Provide the answer as JSON-Object with the following fields:
-      {{
-        "justification": str, // Justify the final conclusion based on gathered information and the reasoning process.
-        "tool_call": object  // Call the 'report_final_conclusion' tool with the required parameters.
-      }}
+        ## Reasoning
+        Put your thought process inside the <think></think> tags. Than return the final answer outside the tags.
 
-      ## Context
-      * **User Instruction:** {plan}
-      * **Information Gathered (Output of all waypoints based on previous conversations)**
+        ## Response Format
+        Provide the answer as JSON-Object with the following fields:
+        {{
+          "justification": str, // Justify the final conclusion based on gathered information and the reasoning process.
+          "tool_call": object  // Call the 'report_final_conclusion' tool with the required parameters.
+        }}
 
-      ## Available Tools:
-    output_keys:
+        ## Context
+        * **User Instruction:** {plan}
+        * **Information Gathered (Output of all waypoints based on previous conversations)**
+
+        ## Available Tools:
+      output_keys:
       - justification:
           type: string
           max_length: 300
       - tool_call:
           type: object
-    observations:
+      observations:
       - plan
-    tools:
+      tools:
       - report_final_conclusion
-    verifiers:
+      verifiers:
       - conclusion_verifier:
           reward_factor: 2.0
-    state_transitions:
-      conditions:
-        - condition: "True"
+      state_transitions:
+        conditions:
+        - condition: 'True'
           next_state: end
